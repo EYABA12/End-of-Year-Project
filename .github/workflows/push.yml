@@ -1,0 +1,64 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build_and_deploy_frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      
+      - name: Build and push frontend Docker image
+        uses: azure/docker-login@v1
+        with:
+          login-server: pfaproject.azurecr.io
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+      - name: Build frontend Docker image
+        run: docker build -t pfaproject.azurecr.io/frontend ./front
+        
+      - name: Push frontend Docker image to Azure Container Registry
+        run: docker push pfaproject.azurecr.io/frontend
+
+      
+  
+  build_and_deploy_backend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      
+      - name: Build and push backend Docker image
+        uses: azure/docker-login@v1
+        with:
+          login-server: pfaproject.azurecr.io
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+      
+      - name: Build backend Docker image
+        run: docker build -t pfaproject.azurecr.io/backend ./backend
+      
+      - name: Push backeend Docker image to Azure Container Registry
+        run: docker push pfaproject.azurecr.io/backend
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [build_and_deploy_frontend, build_and_deploy_backend]
+    steps:
+      - uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: 20.19.88.147
+          username: nada
+          port: 22
+          key: ${{ secrets.GHA_DEPLOY_SSH_PRIVATE_KEY }}
+          script: |
+            cd projectpfa2024
+            git pull 
+            docker compose down
+            docker compose pull
+            docker compose up --force-recreate --build -d
+            docker image prune -f

@@ -1,0 +1,41 @@
+version: '3.8'
+services:
+  frontend:
+    image: pfaproject.azurecr.io/frontend 
+    ports:
+      - "80:80" 
+    
+
+
+  mysql:
+    image: mysql
+    ports:
+      - "3306:3306"
+   
+    environment:
+      MYSQL_ROOT_PASSWORD: pfa2024nadaomri2024%
+      MYSQL_DATABASE: base
+    volumes:
+      - mysqll:/var/lib/mysql
+    
+
+  backend:
+    image: pfaproject.azurecr.io/backend
+    ports:  
+      - "8080:8080"
+    depends_on:
+      - mysql
+    command: ["sh", "-c", "wait-for-it.sh mysql:3306 -- java -jar /app/backendpfa.jar"]
+    
+    
+
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/base?sessionVariables=sql_mode='NO_ENGINE_SUBSTITUTION'&jdbcCompliantTruncation=false
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: pfa2024nadaomri2024%
+    
+ 
+
+
+volumes:
+  mysqll:
